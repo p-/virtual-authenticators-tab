@@ -148,13 +148,10 @@ class CredentialTable extends LitElement {
   }
 
   export(credential) {
-    let pem = `-----BEGIN PRIVATE KEY-----
-${credential.privateKey}
------END PRIVATE KEY-----`;
     let link = document.createElement("a");
     document.body.appendChild(link);
-    link.download = "Private key.pem";
-    link.href = "data:application/x-pem-file;charset=utf-8," + encodeURIComponent(pem);
+    link.download = "credential.json";
+    link.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(credential));
     link.click();
     document.body.removeChild(link);
   }
