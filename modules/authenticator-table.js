@@ -134,6 +134,7 @@ class AuthenticatorTable extends LitElement {
     this.hasResidentKey = true;
     this.hasUserVerification = false;
     this.tabId = chrome.devtools.inspectedWindow.tabId;
+    this.file = null;
   }
 
   protocolChanged(event) {
@@ -150,6 +151,10 @@ class AuthenticatorTable extends LitElement {
 
   hasUserVerificationChanged(event) {
     this.hasUserVerification = event.target.checked;
+  }
+
+  fileChanged(event) {
+    this.file = event.target.files[0];
   }
 
   addAuthenticator() {
@@ -175,6 +180,29 @@ class AuthenticatorTable extends LitElement {
         authenticator.id = response.authenticatorId;
         this.authenticators = this.authenticators.concat([authenticator]);
       });
+  }
+
+  importCredential(authenticator) {
+    var file = this.file;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      let fileContent = e.target.result;
+
+      chrome.debugger.sendCommand(
+        {tabId: chrome.devtools.inspectedWindow.tabId},
+        "WebAuthn.addCredential", {authenticatorId: authenticator.id, credential: JSON.parse(fileContent)},
+        () => {
+          if (chrome.runtime.lastError) {
+            this.dispatchEvent(new CustomEvent("on-error", {
+              detail: chrome.runtime.lastError.message,
+              bubbles: true,
+              composed: true,
+            }));
+            return;
+          }
+        });
+    }
+    reader.readAsText(file);
   }
 
   removeAuthenticator(authenticator) {
@@ -232,6 +260,10 @@ class AuthenticatorTable extends LitElement {
             </div>
           </div>
           <br>
+          <input .value="${this.file}" @input="${this.fileChanged}" type="file">
+          <button @click="${this.importCredential.bind(this, authenticator)}">
+            Import Credential
+          </button>
           <credential-table authenticatorid="${authenticator.id}">
           <hr>
         </div>
